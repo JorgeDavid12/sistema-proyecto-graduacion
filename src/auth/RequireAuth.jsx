@@ -17,7 +17,7 @@ export default function RequireAuth({ children, roles = [] }) {
               <Lock size={22} />
             </span>
             <p className="mt-4 text-sm font-semibold text-warmWhite/64">
-              Validando sesion local...
+              Validando sesión…
             </p>
           </div>
         </div>

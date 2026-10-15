@@ -11,10 +11,10 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "../components/AppShell";
 import GlassCard from "../components/GlassCard";
-import { downloadReport, getReportsData } from "../services/api";
+import { downloadReport, getReportsData, today } from "../services/api";
 
 export default function Reports() {
-  const [filters, setFilters] = useState({ dailyDate: "", month: currentMonth() });
+  const [filters, setFilters] = useState({ dailyDate: today(), month: currentMonth() });
   const [reports, setReports] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -58,7 +58,7 @@ export default function Reports() {
     const controller = new AbortController();
     try {
       await downloadReport(report, filters, controller.signal);
-      setMessage("Exportacion CSV generada localmente.");
+      setMessage("Reporte CSV exportado correctamente.");
     } catch (error) {
       setMessage(`No se pudo exportar: ${error.message}`);
     } finally {
@@ -71,13 +71,12 @@ export default function Reports() {
       <div className="min-h-screen bg-graphite pb-24">
         <section className="border-b border-warmWhite/10 bg-tech-radial">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <p className="text-sm font-semibold uppercase text-emeraldTech">Fase 7</p>
+            <p className="text-sm font-semibold uppercase text-emeraldTech">CONTROL Y CIERRES</p>
             <h1 className="mt-3 text-4xl font-semibold text-white sm:text-5xl">
               Reportes y exportaciones
             </h1>
             <p className="mt-4 max-w-3xl leading-7 text-warmWhite/70">
-              Cierres diarios y mensuales, mantenimiento y morosidad desde la API local.
-              Las exportaciones se generan en CSV sin servicios externos.
+              Consulta ingresos, saldos pendientes y servicios. Filtra la información por fecha y exporta el cierre para su revisión.
             </p>
 
             <div className="mt-7 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
@@ -118,7 +117,7 @@ export default function Reports() {
         </section>
 
         <section className="mx-auto grid max-w-7xl gap-5 px-4 py-8 sm:px-6 lg:px-8">
-          {loading && <p className="text-sm text-warmWhite/58">Cargando reportes locales...</p>}
+          {loading && <p className="text-sm text-warmWhite/58">Cargando reportes…</p>}
 
           {!loading && reports && (
             <>

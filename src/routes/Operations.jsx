@@ -8,7 +8,7 @@ import {
   Truck,
   Wrench,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "../components/AppShell";
 import GlassCard from "../components/GlassCard";
 import {
@@ -27,9 +27,10 @@ export default function Operations() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({
     type: "info",
-    text: "Enciende FastAPI para registrar operaciones reales en la base local.",
+    text: "Registra los movimientos de la jornada y mantén al día la operación.",
   });
 
+  const initialized = useRef(false);
   const firstVehicle = options.vehicles[0]?.id || "MT-006";
   const firstDriver = options.drivers[0]?.id || 1;
 
@@ -63,31 +64,24 @@ export default function Operations() {
     loadOptions();
   }, []);
 
-  useEffect(() => {
-    if (!options.vehicles.length || !options.drivers.length) return;
-    setQuotaForm((form) => ({
-      ...form,
-      vehicle_id: options.vehicles[0].id,
-      driver_id: options.drivers[0].id,
-    }));
-    setAttendanceForm((form) => ({ ...form, driver_id: options.drivers[0].id }));
-    setVehicleForm((form) => ({ ...form, vehicle_id: options.vehicles[0].id }));
-    setMaintenanceForm((form) => ({ ...form, vehicle_id: options.vehicles[0].id }));
-  }, [options.drivers, options.vehicles]);
-
   function loadOptions() {
     setLoading(true);
     const controller = new AbortController();
     getOperationOptions(controller.signal)
       .then((data) => {
         setOptions(data);
-        setMessage({ type: "success", text: "API local conectada. Puedes registrar operaciones." });
+        if (!initialized.current && data.vehicles.length) {
+          const v = data.vehicles[0];
+          setVehicleForm({vehicle_id:v.id,km:v.km,health:v.health,status:v.status,next_service:v.next_service});
+          initialized.current = true;
+        }
+        // Conservar confirmación del último movimiento.
       })
       .catch((error) => {
         setOptions({ vehicles: [], drivers: [], maintenance: [] });
         setMessage({
           type: "warning",
-          text: `Backend no disponible: ${error.message}. No se ejecutan procesos en segundo plano.`,
+          text: `No se pudo cargar la operación: ${error.message}.`,
         });
       })
       .finally(() => setLoading(false));
@@ -110,7 +104,7 @@ export default function Operations() {
         },
         controller.signal,
       );
-      setMessage({ type: "success", text: "Cuota registrada en la API local." });
+      setMessage({ type: "success", text: "Cuota registrada. El cierre y el resumen han sido actualizados." });
     } catch (error) {
       setMessage({ type: "warning", text: `No se pudo registrar cuota: ${error.message}` });
     }
@@ -127,7 +121,7 @@ export default function Operations() {
         },
         controller.signal,
       );
-      setMessage({ type: "success", text: "Mantenimiento registrado en la API local." });
+      setMessage({ type: "success", text: "Servicio programado correctamente." });
       loadOptions();
     } catch (error) {
       setMessage({ type: "warning", text: `No se pudo registrar mantenimiento: ${error.message}` });
@@ -146,7 +140,7 @@ export default function Operations() {
         },
         controller.signal,
       );
-      setMessage({ type: "success", text: "Asistencia registrada en la API local." });
+      setMessage({ type: "success", text: "Asistencia actualizada para la jornada de hoy." });
     } catch (error) {
       setMessage({ type: "warning", text: `No se pudo registrar asistencia: ${error.message}` });
     }
@@ -166,7 +160,7 @@ export default function Operations() {
         },
         controller.signal,
       );
-      setMessage({ type: "success", text: "Unidad actualizada en la API local." });
+      setMessage({ type: "success", text: "Información de la unidad actualizada." });
       loadOptions();
     } catch (error) {
       setMessage({ type: "warning", text: `No se pudo actualizar unidad: ${error.message}` });
@@ -189,6 +183,7 @@ export default function Operations() {
       ...form,
       vehicle_id: vehicleId,
       driver_id: vehicleDriverMap.get(vehicleId) || firstDriver,
+      expected_amount: options.vehicles.find(v => v.id === vehicleId)?.daily_quota || 0,
     }));
   }
 
@@ -199,11 +194,10 @@ export default function Operations() {
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
             <p className="text-sm font-semibold uppercase text-emeraldTech">Sistema</p>
             <h1 className="mt-3 text-4xl font-semibold text-white sm:text-5xl">
-              Operacion diaria
+              Operación diaria
             </h1>
             <p className="mt-4 max-w-3xl leading-7 text-warmWhite/70">
-              Formularios conectados a FastAPI local para administradores. Registran cuotas,
-              asistencia, mantenimientos y unidades sin servicios externos.
+              Registra cuotas, asistencia y servicios. Cada movimiento actualiza la información de la flota y queda en el historial de actividad.
             </p>
             <div
               className={`mt-6 flex items-start gap-3 rounded-lg border p-4 ${
@@ -215,7 +209,7 @@ export default function Operations() {
               }`}
             >
               {message.type === "warning" ? <ServerOff size={20} /> : <BadgeCheck size={20} />}
-              <p className="text-sm font-semibold">{message.text}</p>
+              <p role="status" className="text-sm font-semibold">{message.text}</p>
             </div>
           </div>
         </section>
@@ -305,7 +299,7 @@ export default function Operations() {
               options={["Baja", "Media", "Alta"].map((risk) => ({ value: risk, label: risk }))}
             />
             <NumberInput
-              label="Costo estimado Q"
+              label="Costo estimado (Q)"
               value={maintenanceForm.cost_estimate}
               onChange={(value) => setMaintenanceForm((form) => ({ ...form, cost_estimate: value }))}
             />
@@ -315,19 +309,19 @@ export default function Operations() {
             <Select
               label="Unidad"
               value={vehicleForm.vehicle_id}
-              onChange={(value) => setVehicleForm((form) => ({ ...form, vehicle_id: value }))}
+              onChange={(value) => { const v = options.vehicles.find(v => v.id === value); if (v) setVehicleForm({ vehicle_id: value, km: v.km, health: v.health, status: v.status, next_service: v.next_service }); }}
               options={options.vehicles.map((vehicle) => ({
                 value: vehicle.id,
                 label: `${vehicle.id} · ${vehicle.line}`,
               }))}
             />
             <NumberInput
-              label="Kilometraje"
+              label="Kilometraje (km)"
               value={vehicleForm.km}
               onChange={(value) => setVehicleForm((form) => ({ ...form, km: value }))}
             />
             <NumberInput
-              label="Salud %"
+              label="Condición (%)"
               value={vehicleForm.health}
               onChange={(value) => setVehicleForm((form) => ({ ...form, health: value }))}
             />
@@ -338,7 +332,7 @@ export default function Operations() {
               options={statusOptions.map((status) => ({ value: status, label: status }))}
             />
             <TextInput
-              label="Proximo servicio"
+              label="Próximo servicio"
               value={vehicleForm.next_service}
               onChange={(value) => setVehicleForm((form) => ({ ...form, next_service: value }))}
             />
@@ -363,10 +357,10 @@ export default function Operations() {
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {loading && <p className="text-sm text-warmWhite/58">Cargando desde API local...</p>}
+              {loading && <p className="text-sm text-warmWhite/58">Cargando registros…</p>}
               {!loading && options.maintenance.length === 0 && (
                 <p className="text-sm text-warmWhite/58">
-                  No hay datos disponibles. Enciende FastAPI para cargar pendientes.
+                  No hay servicios pendientes.
                 </p>
               )}
               {options.maintenance
@@ -450,6 +444,9 @@ function NumberInput({ label, value, onChange }) {
       <span className="text-sm font-semibold text-warmWhite/66">{label}</span>
       <input
         type="number"
+        required
+        min="0"
+        step="any"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="mt-2 w-full rounded-lg border border-warmWhite/10 bg-graphiteSoft px-3 py-3 text-sm text-white outline-none transition focus:border-emeraldTech/45"
@@ -464,6 +461,7 @@ function TextInput({ label, value, onChange }) {
       <span className="text-sm font-semibold text-warmWhite/66">{label}</span>
       <input
         type="text"
+        required={label !== "Notas"}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="mt-2 w-full rounded-lg border border-warmWhite/10 bg-graphiteSoft px-3 py-3 text-sm text-white outline-none transition focus:border-emeraldTech/45"

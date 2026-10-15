@@ -1,147 +1,81 @@
-import { KeyRound, Loader2, LogIn, ShieldCheck, UserRound } from "lucide-react";
-import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import AppShell from "../components/AppShell";
-import GlassCard from "../components/GlassCard";
-import { useAuth } from "../auth/AuthContext";
-
-const initialAccounts = [
-  { label: "Administrador", username: "admin", password: "admin123" },
-  { label: "Piloto", username: "piloto", password: "piloto123" },
-];
-
+import { Eye, EyeOff, ArrowRight, Route, LockKeyhole, ShieldCheck, Truck, Wrench, MapPinned, Loader2, UserRound } from 'lucide-react';
+import { useState } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
+import { getSettings } from '../services/api';
 export default function Login() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { bootstrapping, isAuthenticated, login, user } = useAuth();
-  const [form, setForm] = useState({ username: "admin", password: "admin123" });
-  const [message, setMessage] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  if (!bootstrapping && isAuthenticated) {
-    return <Navigate to={homeForRole(user?.role)} replace />;
-  }
-
-  async function submit(event) {
-    event.preventDefault();
-    setSubmitting(true);
-    setMessage(null);
-
+  const location = useLocation(),
+    navigate = useNavigate(),
+    {
+      bootstrapping,
+      isAuthenticated,
+      login,
+      user
+    } = useAuth();
+  const [form, setForm] = useState({
+      username: '',
+      password: ''
+    }),
+    [visible, setVisible] = useState(false),
+    [message, setMessage] = useState(''),
+    [busy, setBusy] = useState(false),
+    [support, setSupport] = useState(false);
+  const company = getSettings().company;
+  const home = role => role === 'piloto' ? '/sistema/piloto' : '/sistema';
+  if (!bootstrapping && isAuthenticated) return <Navigate to={home(user?.role)} replace />;
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    setMessage('');
     try {
-      const loggedUser = await login(form.username, form.password);
-      const requestedPath = location.state?.from?.pathname;
-      const destination = allowedPathForRole(loggedUser.role, requestedPath);
-      navigate(destination, { replace: true });
-    } catch (error) {
-      setMessage(error.message || "No se pudo iniciar sesion local.");
+      const u = await login(form.username, form.password),
+        p = location.state?.from?.pathname;
+      const allowed = u.role === 'administrador' ? p?.startsWith('/sistema') && p !== '/sistema/login' : p === '/sistema/piloto';
+      navigate(allowed ? p : home(u.role), {
+        replace: true
+      });
+    } catch (err) {
+      setMessage(err.message);
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
   }
-
-  return (
-    <AppShell compact>
-      <div className="min-h-[calc(100vh-4rem)] bg-tech-radial px-4 py-10">
-        <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-          <div>
-            <p className="text-sm font-semibold uppercase text-emeraldTech">Fase 6</p>
-            <h1 className="mt-3 text-4xl font-semibold text-white sm:text-5xl">
-              Acceso local por rol
-            </h1>
-            <p className="mt-4 max-w-xl leading-7 text-warmWhite/70">
-              Inicia sesion contra FastAPI local. Administrador abre el panel completo;
-              piloto entra solo a su jornada asignada.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {initialAccounts.map((account) => (
-                <button
-                  key={account.username}
-                  type="button"
-                  onClick={() =>
-                    setForm({ username: account.username, password: account.password })
-                  }
-                  className="inline-flex items-center gap-2 rounded-lg border border-warmWhite/12 bg-warmWhite/[0.055] px-3 py-2 text-sm font-semibold text-warmWhite/72 transition hover:border-emeraldTech/35 hover:text-white"
-                >
-                  <UserRound size={16} />
-                  {account.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <GlassCard className="p-6">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-lg bg-emeraldTech/12 text-emeraldTech">
-                <ShieldCheck size={24} />
-              </span>
-              <div>
-                <p className="text-sm text-warmWhite/58">Sesion local</p>
-                <h2 className="text-2xl font-semibold text-white">Mototaxi David</h2>
-              </div>
-            </div>
-
-            <form onSubmit={submit} className="grid gap-4">
-              <label className="block">
-                <span className="text-sm font-semibold text-warmWhite/66">Usuario</span>
-                <input
-                  type="text"
-                  autoComplete="username"
-                  value={form.username}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, username: event.target.value }))
-                  }
-                  className="mt-2 w-full rounded-lg border border-warmWhite/10 bg-graphiteSoft px-3 py-3 text-sm text-white outline-none transition focus:border-emeraldTech/45"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-semibold text-warmWhite/66">Clave</span>
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  value={form.password}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, password: event.target.value }))
-                  }
-                  className="mt-2 w-full rounded-lg border border-warmWhite/10 bg-graphiteSoft px-3 py-3 text-sm text-white outline-none transition focus:border-emeraldTech/45"
-                />
-              </label>
-
-              {message && (
-                <div className="rounded-lg border border-alertAmber/30 bg-alertAmber/10 p-3 text-sm font-semibold text-alertAmber">
-                  {message}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting || bootstrapping}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emeraldTech px-4 py-3 text-sm font-bold text-graphite shadow-glow transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {submitting ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
-                Entrar
-              </button>
-            </form>
-
-            <div className="mt-5 flex items-center gap-2 rounded-lg border border-warmWhite/10 bg-warmWhite/[0.055] p-3 text-sm text-warmWhite/60">
-              <KeyRound className="shrink-0 text-emeraldTech" size={18} />
-              <span>admin/admin123 / piloto/piloto123</span>
-            </div>
-          </GlassCard>
-        </div>
-      </div>
-    </AppShell>
-  );
-}
-
-function homeForRole(role) {
-  return role === "piloto" ? "/sistema/piloto" : "/sistema";
-}
-
-function allowedPathForRole(role, requestedPath) {
-  if (!requestedPath || requestedPath === "/login" || requestedPath === "/sistema/login") {
-    return homeForRole(role);
-  }
-  if (role === "piloto" && requestedPath.startsWith("/sistema")) return "/sistema/piloto";
-  return requestedPath;
+  return <div className="login-page">
+    <section className="login-story"><div className="brand"><span className="brand-mark"><Route size={25} /></span><span><strong>{company}</strong><small>SISTEMA INTEGRAL DE FLOTAS</small></span></div>
+      <div className="login-story-body"><span className="eyebrow">CONTROL Y CONTINUIDAD OPERATIVA</span><h1>Tu flota. <br />Una sola <br /><span>visión.</span></h1><p>La información que necesitas para cuidar tus unidades, organizar al equipo y cerrar cada jornada con claridad.</p>
+        <div className="login-features">{[{
+            icon: Truck,
+            title: 'Operación centralizada',
+            text: 'Unidades, pilotos y cuotas en un mismo lugar.'
+          }, {
+            icon: Wrench,
+            title: 'Mantenimiento preventivo',
+            text: 'Prioridades y servicios para cuidar la flota.'
+          }, {
+            icon: MapPinned,
+            title: 'Control de jornadas',
+            text: 'Puntos de control de la ruta Cuilapa–Oratorio.'
+          }].map(({
+            icon: Icon,
+            title,
+            text
+          }) => <div key={title}><span><Icon size={21} /></span><div><strong>{title}</strong><small>{text}</small></div></div>)}</div>
+      </div><div className="login-story-footer">Cuilapa, Santa Rosa <span>·</span> Guatemala</div>
+    </section>
+    <section className="login-access"><div className="login-form-wrap"><div className="login-lock"><LockKeyhole size={24} /></div><span className="eyebrow mt-7 block">BIENVENIDO A TU ESPACIO</span><h2>Iniciar sesión</h2><p className="login-description">Ingresa con tu cuenta para acceder a las herramientas de tu equipo.</p>
+      <form onSubmit={submit} className="mt-8 grid gap-5"><label className="field-label">Usuario<div className="input-icon"><UserRound size={18} /><input autoComplete="username" name="username" placeholder="Tu nombre de usuario" required value={form.username} onChange={e => setForm({
+                ...form,
+                username: e.target.value
+              })} autoCapitalize="none" spellCheck="false" /></div></label>
+      <label className="field-label">Contraseña<div className="input-icon"><LockKeyhole size={18} /><input autoComplete="current-password" name="password" placeholder="Ingresa tu contraseña" type={visible ? 'text' : 'password'} required value={form.password} onChange={e => setForm({
+                ...form,
+                password: e.target.value
+              })} /><button type="button" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
+      <button type="button" className="text-right text-sm text-emeraldTech" onClick={() => setSupport(!support)}>¿Necesitas ayuda para acceder?</button>
+      {support && <p className="notice">Solicita al administrador de Mototaxi David la revisión de tu usuario o el restablecimiento de tu contraseña.</p>}
+      {message && <p role="alert" className="notice error">{message}</p>}
+      <button type="submit" className="primary-button w-full" disabled={busy || bootstrapping}>{busy ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />} {busy ? 'Verificando acceso…' : 'Ingresar al sistema'}</button>
+      </form><div className="login-permissions"><ShieldCheck size={18} /><p>Tu perfil determina las funciones disponibles.<br /><span>Administración de flota y jornada del piloto.</span></p></div>
+    </div><footer>© {new Date().getFullYear()} {company} · Gestión de transporte</footer></section>
+  </div>;
 }

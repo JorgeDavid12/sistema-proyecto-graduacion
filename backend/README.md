@@ -1,3 +1,9 @@
+# Backend histórico — no utilizado por la demo
+
+> Esta carpeta se conserva únicamente como referencia del prototipo anterior. La demo
+> actual funciona solo con React y datos fijos. No inicies este backend: su configuración
+> histórica puede volver a crear un archivo SQLite local.
+
 # Backend Fase 2 - Mototaxi David
 
 API base con FastAPI, SQLModel y persistencia local. Por defecto usa SQLite para

@@ -1,12 +1,12 @@
 import { MapPin, Navigation2 } from "lucide-react";
-import { routeStops } from "../data/demoData";
+import { routeStops } from "../data/fleetData";
 
 export default function RouteMap({
   compact = false,
   stops = routeStops,
   routeName = "Cuilapa - Oratorio",
   vehicleId = "MB-001",
-  eyebrow = "Ruta demo",
+  eyebrow = "Puntos de control de ruta",
 }) {
   return (
     <div className="relative overflow-hidden rounded-lg border border-warmWhite/10 bg-graphiteSoft p-5">
@@ -35,17 +35,17 @@ export default function RouteMap({
             <path
               d="M42 170 C120 38 220 215 307 96 C390 -12 472 108 580 42"
               fill="none"
-              stroke="#10f09b"
+              stroke="#34d399"
               strokeDasharray="14 12"
               strokeWidth="4"
               strokeLinecap="round"
-              className="animate-route-dash"
+
             />
           </svg>
           <div className="absolute left-[5%] top-[63%] text-emeraldTech">
             <MapPin size={24} />
           </div>
-          <div className="absolute left-[47%] top-[33%] grid h-12 w-12 place-items-center rounded-lg bg-cyberCyan text-graphite shadow-glow">
+          <div className="absolute grid h-10 w-10 place-items-center rounded-lg bg-cyberCyan text-graphite" style={{ left: `${8 + Math.max(0, stops.findIndex(s => s.state === "En curso") === -1 ? stops.filter(s => s.state === "Completado").length - 1 : stops.findIndex(s => s.state === "En curso")) * 27}%`, top: "35%" }}>
             <Navigation2 size={22} />
           </div>
           <div className="absolute right-[5%] top-[9%] text-alertAmber">
@@ -53,6 +53,7 @@ export default function RouteMap({
           </div>
         </div>
 
+        <p className="mb-4 text-xs text-warmWhite/50">Esquema del recorrido · Avance según puntos de control registrados.</p>
         <div className="grid gap-3 sm:grid-cols-4">
           {stops.map((stop) => (
             <div key={stop.name} className="rounded-lg border border-warmWhite/10 bg-warmWhite/[0.055] p-3">

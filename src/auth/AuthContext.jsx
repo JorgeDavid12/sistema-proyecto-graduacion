@@ -56,13 +56,23 @@ export function AuthProvider({ children }) {
         await logoutSession(controller.signal);
       }
     } catch {
-      // Si FastAPI esta apagado, la sesion local del navegador igual se limpia.
+      // La sesión se limpia aunque falle el cierre.
     } finally {
       clearStoredSession();
       setSession(null);
       setUser(null);
     }
   }
+
+  useEffect(() => {
+    if (!session?.expires_at) return;
+    const timeout = window.setTimeout(() => {
+      clearStoredSession();
+      setSession(null);
+      setUser(null);
+    }, Math.max(0, session.expires_at - Date.now()));
+    return () => window.clearTimeout(timeout);
+  }, [session?.expires_at]);
 
   const value = useMemo(
     () => ({

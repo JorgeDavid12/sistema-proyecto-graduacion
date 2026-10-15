@@ -3,13 +3,14 @@ export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
+      opacity: Object.fromEntries(Array.from({length: 99}, (_, i) => [i + 1, String((i + 1) / 100)])),
       colors: {
-        emeraldTech: "#10f09b",
+        emeraldTech: "#34d399",
         deepGreen: "#063f32",
-        graphite: "#111716",
-        graphiteSoft: "#18211f",
-        warmWhite: "#f6f2e8",
-        cyberCyan: "#45d9ff",
+        graphite: "#0b1216",
+        graphiteSoft: "#101c23",
+        warmWhite: "#dbe6e9",
+        cyberCyan: "#67c7d9",
         alertAmber: "#ffbe45",
       },
       boxShadow: {

@@ -1,236 +1,63 @@
-# Mototaxi David
+# Mototaxi David · Sistema Integral de Flotas
 
-Sistema Integral de Gestion de Flotas para proyecto de graduacion.
+Interfaz de trabajo para administrar cinco mototaxis y un microbús de la ruta Cuilapa–Oratorio. Los procesos se basan en el documento `semana.docx`: cuotas, asistencia, servicios preventivos, jornadas y consultas de operación.
 
-## Fase 1 - Frontend
-
-Frontend con React, Vite, React Router, Tailwind y datos demo locales.
+## Ejecución
 
 ```powershell
-corepack prepare pnpm@10.29.3 --activate
-corepack pnpm install
-corepack pnpm dev
+pnpm install
+pnpm dev
 ```
 
-Rutas demo:
+Para generar la distribución: `pnpm build`. Para revisarla: `pnpm preview`.
+No es necesario iniciar el backend existente ni instalar una base de datos.
 
-- `/demo`
-- `/demo/defensa`
+## Publicar en Netlify
 
-Rutas del sistema:
+Para una carga manual, ejecuta `pnpm build` y sube la carpeta `dist` completa al proyecto existente de Netlify. Debe incluir `index.html`, `assets/` y `_redirects`. No subas la carpeta `src` ni solamente `index.html`.
 
-- `/sistema/login`
-- `/sistema`
-- `/sistema/operacion`
-- `/sistema/reportes`
-- `/sistema/gps`
-- `/sistema/ia`
-- `/sistema/configuracion`
-- `/sistema/piloto`
-- `/jornada/:token`
+El archivo `public/_redirects` se copia automáticamente a `dist/_redirects` durante la compilación. La regla `/* /index.html 200` permite abrir y recargar rutas como `/sistema/login` directamente, también desde otro dispositivo.
 
-Las rutas antiguas `/`, `/defensa`, `/login`, `/app`, `/app/operacion` y
-`/track/demo` redirigen a la nueva estructura para conservar compatibilidad.
+Si conectas el repositorio, `netlify.toml` define el comando de compilación `pnpm build` y el directorio de publicación `dist`. El cambio no se aplica a una publicación existente hasta volver a desplegar.
 
-## Fase 2 - Backend
+## Cuentas para revisar el prototipo
 
-Backend base con FastAPI, SQLModel y datos demo persistentes. Usa SQLite local
-por defecto para correr sin instalar PostgreSQL. Cuando exista PostgreSQL,
-definir `DATABASE_URL` en `.env`.
+| Perfil | Usuario | Contraseña |
+| --- | --- | --- |
+| Administrador | admin | admin123 |
+| Piloto | piloto | piloto123 |
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python -m pip install -r backend\requirements.txt
-.\.venv\Scripts\python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
-```
+El login no muestra ni completa estas credenciales. El perfil piloto abre su jornada y no tiene acceso a las pantallas administrativas.
 
-Endpoints:
+## Funciones
 
-- `GET /api/health`
-- `GET /api/system/database`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `POST /api/auth/logout`
-- `GET /api/dashboard/kpis`
-- `GET /api/vehicles`
-- `GET /api/drivers`
-- `GET /api/maintenance`
-- `GET /api/alerts`
-- `GET /api/routes/demo`
-- `GET /api/quotas/summary`
-- `GET /api/reports/daily`
-- `GET /api/reports/daily/export`
-- `GET /api/reports/monthly`
-- `GET /api/reports/monthly/export`
-- `GET /api/reports/maintenance`
-- `GET /api/reports/maintenance/export`
-- `GET /api/reports/delinquency`
-- `GET /api/reports/delinquency/export`
-- `POST /api/quotas/payments`
-- `POST /api/maintenance`
-- `PATCH /api/maintenance/{event_id}/complete`
-- `POST /api/attendance`
-- `PATCH /api/vehicles/{vehicle_id}`
-- `GET /api/ai/status`
-- `GET /api/ai/external/status`
-- `POST /api/ai/external-query`
-- `GET /api/gps/status`
-- `POST /api/tracking/sessions`
-- `GET /api/tracking/sessions`
-- `GET /api/public/tracking/{token}`
-- `POST /api/public/tracking/{token}/consent`
-- `POST /api/public/tracking/{token}/points`
-- `POST /api/assistant/local-query`
-- `POST /api/gps/points`
-- `GET /api/gps/latest/{vehicle_id}`
+- Resumen: indicadores calculados, búsqueda de flota, prioridades, cobranza, servicios y actividad reciente.
+- Operación: abonos de cuota con validación de saldo y piloto, asistencia del día, programación y cierre de servicios, actualización de unidades.
+- Reportes: filtros diarios y mensuales, morosidad, mantenimiento y exportación CSV con los mismos registros del resumen.
+- Asistente: conversación sobre cuotas, mantenimiento, asistencia y puntos de control. Consulta los registros actuales y reconoce información insuficiente.
+- Jornadas: asignación de piloto y unidad, enlace temporal, consentimiento y registro puntual de ubicación desde el navegador.
+- Piloto: iniciar o pausar la jornada y confirmar llegadas a puntos de control.
+- Configuración: empresa, sede, horario de referencia y prioridades del resumen.
 
-## Alcance actual
+El punto de entrada `/` dirige al sistema y solicita acceso si no hay una sesión. Las direcciones antiguas de demo y defensa redirigen al sistema.
 
-Hay autenticacion local con SQLite/FastAPI. No hay Gemini, GPS real ni
-proveedores externos de identidad.
+## Alcance técnico
 
-## Fase 3 - Conexion frontend/backend
+Este sigue siendo un prototipo, aunque la interfaz presenta el flujo del sistema. El acceso por roles es una simulación en cliente y no debe usarse para proteger datos de producción. Las cuentas están en el código; no existe autenticación de servidor. La sesión vence a las ocho horas.
 
-El dashboard y la pantalla `/sistema/piloto` intentan leer datos desde FastAPI usando
-`VITE_API_BASE_URL`. Si el backend no esta activo, el frontend vuelve
-automaticamente a los datos locales de Fase 1.
+La información inicial es de ejemplo. Los movimientos y preferencias se guardan en `localStorage`; sobreviven a las recargas del mismo navegador y origen, pero no se sincronizan entre equipos, dominios o puertos. La conversación se conserva en la pestaña con `sessionStorage`. Borrar estos datos devuelve el escenario inicial. La bitácora local permite revisar acciones pero no ofrece integridad de auditoría de servidor.
 
-```powershell
-# Backend
-.\.venv\Scripts\python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+El asistente usa reglas y cálculos locales: no llama a Gemini ni a otro proveedor, no genera cargos y no implementa predicciones mecánicas reales. Si la consulta requiere combustible, un trimestre completo o una predicción, informa que no tiene historial suficiente.
 
-# Frontend
-corepack pnpm dev
-```
+El esquema de ruta representa puntos de control; no es un mapa GPS en vivo. El enlace de jornada funciona en el navegador y origen que contiene la asignación. El registro opcional de coordenadas requiere consentimiento, permiso del navegador y HTTPS o localhost; queda en ese navegador y no se transmite a un servidor. No se validó GPS físico.
 
-No se agregan dependencias nuevas en esta fase.
+El backend anterior se conserva como referencia y no interviene en esta experiencia.
 
-## Fase 4 - APIs internas gratuitas
+## Código
 
-Se agregaron APIs propias que no dependen de servicios externos:
+- `src/services/api.js`: persistencia local, validaciones y cálculos compartidos.
+- `src/data/fleetData.js`: flota, servicios y recorrido inicial.
+- `src/components/AppShell.jsx`: menú por perfil y navegación adaptable.
+- `src/routes/`: pantallas de trabajo.
 
-- `POST /api/assistant/local-query`: asistente analitico local basado en reglas.
-- `POST /api/gps/points`: guarda puntos GPS enviados por el frontend.
-- `GET /api/gps/latest/{vehicle_id}`: consulta el ultimo punto guardado.
-
-Estas APIs no ejecutan procesos en segundo plano, no consumen recursos cuando el
-proyecto esta apagado y no generan cobros silenciosos. Solo trabajan cuando
-FastAPI esta encendido y reciben una solicitud.
-
-## Fase 5 - Operacion diaria
-
-Se agrego la ruta `/sistema/operacion` con formularios para:
-
-- Registrar cuotas.
-- Registrar asistencia.
-- Registrar mantenimientos.
-- Completar mantenimientos pendientes.
-- Actualizar kilometraje, salud, estado y proximo servicio de una unidad.
-
-Los formularios usan solo la API local de FastAPI. No hay servicios pagados ni
-procesos en segundo plano.
-
-## Fase 6 - Autenticacion local y roles
-
-Se agrego login local sin servicios externos. FastAPI guarda usuarios, hashes de
-contrasena PBKDF2 y tokens de sesion en SQLite.
-
-Credenciales iniciales:
-
-- Administrador: `admin` / `admin123`
-- Piloto: `piloto` / `piloto123`
-
-Permisos:
-
-- Administrador: dashboard, operacion diaria, asistente local y reportes futuros.
-- Piloto: pantalla `/sistema/piloto` y envio de puntos locales solo para su unidad asignada.
-
-Rutas protegidas:
-
-- `/sistema`
-- `/sistema/operacion`
-- `/sistema/reportes`
-- `/sistema/gps`
-- `/sistema/ia`
-- `/sistema/configuracion`
-- `/sistema/piloto`
-
-## Separacion demo/sistema
-
-La demo academica queda aislada en `/demo` y `/demo/defensa`. El sistema real se
-trabaja desde `/sistema`, con login, roles y navegacion propia. Esto permite
-mantener la demo terminada sin bloquear el avance del programa operativo.
-
-## Fase 7 - Reportes y exportaciones
-
-Se agrego la ruta `/sistema/reportes` para administradores con:
-
-- Cierre diario.
-- Cierre mensual.
-- Reporte de mantenimiento.
-- Reporte de morosidad.
-- Exportaciones CSV generadas por FastAPI local.
-
-Los reportes usan solo datos de SQLite/API local y no requieren servicios
-externos.
-
-## Fase 8 - PostgreSQL opcional
-
-Se agrego `/sistema/configuracion` y `GET /api/system/database` para mostrar el
-motor activo de base de datos sin exponer claves. Por defecto el sistema sigue
-en SQLite local.
-
-Para usar PostgreSQL real cuando decidas instalarlo/configurarlo:
-
-```powershell
-# .env
-DATABASE_URL=postgresql+psycopg://mototaxi_user:mototaxi_password@127.0.0.1:5432/mototaxi_david
-```
-
-Luego reinicia FastAPI. El backend creara las tablas con SQLModel y sembrara
-usuarios/datos iniciales si la base esta vacia.
-
-## Fase 9 - GPS real opcional
-
-Se agrego `/sistema/gps` para crear jornadas GPS temporales por unidad/piloto.
-Cada jornada genera un enlace `/jornada/:token`.
-
-El envio de ubicacion real requiere:
-
-- Token de jornada activo.
-- Consentimiento explicito del piloto.
-- Contexto seguro del navegador (`https`, `localhost` o `127.0.0.1`).
-
-El sistema no activa rastreo en segundo plano. La ubicacion se envia solo cuando
-el piloto presiona el boton desde su enlace de jornada.
-
-## Fase 10 - IA externa opcional
-
-Se agrego `/sistema/ia` y endpoints de estado para IA externa. La integracion
-queda bloqueada por defecto y no realiza llamadas pagadas.
-
-Para autorizar una IA externa en una fase posterior se deben definir:
-
-```env
-AI_EXTERNAL_ENABLED=true
-AI_PROVIDER=openai|google|anthropic
-AI_MODEL=modelo_autorizado
-AI_API_KEY=clave_autorizada
-AI_COST_ACKNOWLEDGED=true
-```
-
-Si falta cualquiera de esos valores, `POST /api/ai/external-query` responde 403.
-Aunque todo este configurado, el conector real todavia devuelve 501 hasta que se
-implemente el proveedor elegido explicitamente.
-
-Endpoints de autenticacion:
-
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `POST /api/auth/logout`
-
-## Integraciones futuras
-
-Gemini y GPS real no estan implementados. Solo hay endpoints de estado y una
-guia de referencia en [docs/futuras-integraciones.md](docs/futuras-integraciones.md)
-con la idea tecnica para implementarlos despues de forma segura.
+Los cambios locales anteriores a esta intervención se conservaron en `.work/before-system/` antes de editar. Ese respaldo y las capturas de QA quedan excluidos de Git.

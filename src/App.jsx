@@ -1,13 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import Landing from "./routes/Landing.jsx";
-import Defense from "./routes/Defense.jsx";
 import Dashboard from "./routes/Dashboard.jsx";
 import Operations from "./routes/Operations.jsx";
 import Reports from "./routes/Reports.jsx";
 import Settings from "./routes/Settings.jsx";
 import GpsAdmin from "./routes/GpsAdmin.jsx";
 import AiSettings from "./routes/AiSettings.jsx";
-import TrackDemo from "./routes/TrackDemo.jsx";
+import DriverJourney from "./routes/DriverJourney.jsx";
 import TrackingSession from "./routes/TrackingSession.jsx";
 import Login from "./routes/Login.jsx";
 import RequireAuth from "./auth/RequireAuth.jsx";
@@ -15,11 +13,11 @@ import RequireAuth from "./auth/RequireAuth.jsx";
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/demo" replace />} />
-      <Route path="/demo" element={<Landing />} />
-      <Route path="/demo/defensa" element={<Defense />} />
+      <Route path="/" element={<Navigate to="/sistema" replace />} />
+      <Route path="/demo" element={<Navigate to="/sistema" replace />} />
+      <Route path="/demo/defensa" element={<Navigate to="/sistema" replace />} />
       <Route path="/jornada/:token" element={<TrackingSession />} />
-      <Route path="/defensa" element={<Navigate to="/demo/defensa" replace />} />
+      <Route path="/defensa" element={<Navigate to="/sistema" replace />} />
       <Route path="/login" element={<Navigate to="/sistema/login" replace />} />
       <Route path="/sistema/login" element={<Login />} />
       <Route path="/app" element={<Navigate to="/sistema" replace />} />
@@ -81,10 +79,11 @@ export default function App() {
         path="/sistema/piloto"
         element={
           <RequireAuth roles={["administrador", "piloto"]}>
-            <TrackDemo />
+            <DriverJourney />
           </RequireAuth>
         }
       />
+      <Route path="*" element={<Navigate to="/sistema" replace />} />
     </Routes>
   );
 }

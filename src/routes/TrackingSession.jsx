@@ -40,11 +40,11 @@ export default function TrackingSession() {
     try {
       const data = await acceptTrackingConsent(
         token,
-        { accepted: true, consent_name: consentName || "Piloto" },
+        { accepted: true, consent_name: consentName.trim() },
         controller.signal,
       );
       setSession(data);
-      setMessage("Consentimiento guardado. Ya puedes enviar tu ubicacion de jornada.");
+      setMessage("Consentimiento guardado. Ya puedes registrar tu ubicación de jornada.");
     } catch (error) {
       setMessage(`No se pudo guardar consentimiento: ${error.message}`);
     } finally {
@@ -82,7 +82,7 @@ export default function TrackingSession() {
             },
             controller.signal,
           );
-          setMessage(`Ubicacion enviada. Precision aproximada: ${Math.round(position.coords.accuracy)} m. Punto ${point.id}.`);
+          setMessage(`Ubicación registrada en la jornada. Precision aproximada: ${Math.round(position.coords.accuracy)} m. Punto ${point.id}.`);
         } catch (error) {
           setMessage(`No se pudo enviar ubicacion: ${error.message}`);
         } finally {
@@ -131,7 +131,7 @@ export default function TrackingSession() {
               <div className="mt-5 rounded-lg border border-warmWhite/10 bg-warmWhite/[0.055] p-4">
                 <p className="text-sm font-semibold text-white">Condiciones de uso</p>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-warmWhite/66">
-                  <li>- La ubicacion se envia solo durante esta jornada temporal.</li>
+                  <li>- La ubicación se registra únicamente durante esta jornada autorizada.</li>
                   <li>- Debes aceptar consentimiento antes de enviar GPS real.</li>
                   <li>- Puedes negar el permiso del navegador cuando lo solicite.</li>
                   <li>- El sistema no usa servicios externos de rastreo.</li>
@@ -159,11 +159,11 @@ export default function TrackingSession() {
                   <button
                     type="button"
                     onClick={acceptConsent}
-                    disabled={busy || !session.is_active}
+                    disabled={busy || !session.is_active || !consentName.trim()}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emeraldTech px-4 py-3 text-sm font-bold text-graphite shadow-glow disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     <CheckCircle2 size={18} />
-                    Acepto compartir ubicacion
+                    Acepto registrar mi ubicación
                   </button>
                 </div>
               ) : (
@@ -174,7 +174,7 @@ export default function TrackingSession() {
                   className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emeraldTech px-4 py-3 text-sm font-bold text-graphite shadow-glow disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <LocateFixed size={18} />
-                  Enviar ubicacion real
+                  Registrar ubicación actual
                 </button>
               )}
 

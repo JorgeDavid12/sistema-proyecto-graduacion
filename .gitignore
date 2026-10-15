@@ -8,3 +8,7 @@ __pycache__/
 .env.*
 !.env.example
 *.local
+.work/
+output/playwright/
+
+.playwright-cli/

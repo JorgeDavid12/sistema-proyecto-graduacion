@@ -30,7 +30,7 @@ export default function GpsAdmin() {
     setMessage(null);
     const controller = new AbortController();
 
-    Promise.all([getOperationOptions(controller.signal), getTrackingSessions(controller.signal)])
+    return Promise.all([getOperationOptions(controller.signal), getTrackingSessions(controller.signal)])
       .then(([operationOptions, trackingSessions]) => {
         setOptions(operationOptions);
         setSessions(trackingSessions);
@@ -58,8 +58,9 @@ export default function GpsAdmin() {
         expires_hours: Number(form.expires_hours),
       };
       await createTrackingSession(payload, controller.signal);
-      setMessage("Jornada GPS creada con token temporal.");
-      loadData();
+      setMessage("Jornada registrada correctamente.");
+      await loadData();
+      setMessage("Jornada registrada correctamente.");
     } catch (error) {
       setMessage(`No se pudo crear jornada: ${error.message}`);
     }
@@ -75,8 +76,7 @@ export default function GpsAdmin() {
 
   async function copyLink(publicUrl) {
     const fullUrl = `${origin}${publicUrl}`;
-    await navigator.clipboard.writeText(fullUrl);
-    setMessage("Enlace copiado al portapapeles.");
+    try { await navigator.clipboard.writeText(fullUrl); setMessage("Enlace copiado al portapapeles."); } catch { setMessage("No se pudo copiar. Selecciona el enlace y cópialo manualmente."); }
   }
 
   return (
@@ -84,13 +84,12 @@ export default function GpsAdmin() {
       <div className="min-h-screen bg-graphite pb-24">
         <section className="border-b border-warmWhite/10 bg-tech-radial">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <p className="text-sm font-semibold uppercase text-emeraldTech">Fase 9</p>
+            <p className="text-sm font-semibold uppercase text-emeraldTech">CONTROL DE RUTAS</p>
             <h1 className="mt-3 text-4xl font-semibold text-white sm:text-5xl">
-              GPS por jornada
+              Rutas y jornadas
             </h1>
             <p className="mt-4 max-w-3xl leading-7 text-warmWhite/70">
-              Crea enlaces temporales para pilotos. El GPS real solo se activa desde el
-              enlace con consentimiento explicito y contexto seguro.
+              Asigna la unidad y el piloto para cada jornada. Consulta su vigencia y el registro de puntos de control.
             </p>
             {message && (
               <div className="mt-5 rounded-lg border border-cyberCyan/30 bg-cyberCyan/10 p-4 text-sm font-semibold text-cyberCyan">
@@ -162,7 +161,7 @@ export default function GpsAdmin() {
           <GlassCard className="overflow-hidden">
             <div className="flex items-center justify-between gap-3 border-b border-warmWhite/10 p-5">
               <div>
-                <p className="text-sm text-warmWhite/58">Tokens temporales</p>
+                <p className="text-sm text-warmWhite/58">Asignaciones de la jornada</p>
                 <h2 className="text-2xl font-semibold text-white">Jornadas activas</h2>
               </div>
               <button
@@ -199,7 +198,7 @@ export default function GpsAdmin() {
                         }`}
                       >
                         <ShieldCheck size={15} />
-                        {item.consent_at ? "Consentido" : "Sin consentimiento"}
+                        {!item.is_active ? "Vencida" : item.consent_at ? "Consentimiento registrado" : "Pendiente de consentimiento"}
                       </span>
                       <button
                         type="button"
@@ -213,7 +212,7 @@ export default function GpsAdmin() {
                   </div>
                   <div className="mt-3 flex items-center gap-2 rounded-lg bg-graphiteSoft px-3 py-2 text-xs text-warmWhite/58">
                     <LinkIcon size={14} />
-                    <span className="truncate">{origin}{item.public_url}</span>
+                    <a className="truncate underline" href={item.public_url}>{origin}{item.public_url}</a>
                   </div>
                 </div>
               ))}
