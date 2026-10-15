@@ -2,6 +2,8 @@
 
 Interfaz de trabajo para administrar cinco mototaxis y un microbús de la ruta Cuilapa–Oratorio. Los procesos se basan en el documento `semana.docx`: cuotas, asistencia, servicios preventivos, jornadas y consultas de operación.
 
+![Vista previa de la pantalla de inicio de Mototaxi David, sistema integral de flotas](docs/preview-portada.png)
+
 ## Ejecución
 
 ```powershell
